@@ -1,0 +1,102 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  
+  --color-surface: var(--surface);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  /* Radius mapping for tailwind v4 */
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 3rem;
+  --radius-4xl: 4rem;
+
+  /* Custom elevation & gradients from Stitch */
+  --shadow-premium: 0 12px 32px rgba(0, 88, 188, 0.08);
+  --gradient-primary: linear-gradient(135deg, #0058bc 0%, #0070eb 100%);
+}
+
+:root {
+  --background: #f7f9fc;
+  --foreground: #191c1e;
+  
+  --surface: #f7f9fc;
+  --surface-container-low: #f2f4f7;
+  --surface-container-lowest: #ffffff;
+
+  --primary: #0058bc;
+  --primary-foreground: #ffffff;
+
+  --secondary: #adc6ff;
+  --secondary-foreground: #385283;
+
+  --muted: #eceef1;
+  --muted-foreground: #414754;
+
+  --border: transparent; /* No-Line Rule: Avoid borders */
+  --input: #e0e3e6;
+  --ring: #0058bc;
+
+  --radius: 1rem;
+
+  --font-sans: var(--font-be-vietnam-pro);
+  --font-display: var(--font-plus-jakarta-sans);
+}
+
+.dark {
+  --background: #191c1e;
+  --foreground: #f7f9fc;
+
+  --surface: #191c1e;
+  --surface-container-low: #2d3133;
+  --surface-container-lowest: #191c1e;
+
+  --primary: #adc6ff;
+  --primary-foreground: #001a41;
+
+  --secondary: #455e90;
+  --secondary-foreground: #ffffff;
+
+  --muted: #414754;
+  --muted-foreground: #c1c6d6;
+
+  --border: #414754;
+  --input: #2d3133;
+  --ring: #adc6ff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-foreground;
+  }
+}

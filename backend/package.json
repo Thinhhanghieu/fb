@@ -1,0 +1,8 @@
+{
+  "name": "@fb-clone/backend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"Backend development setup pending...\" && exit 0"
+  }
+}
