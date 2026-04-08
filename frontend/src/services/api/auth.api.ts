@@ -40,7 +40,7 @@ export const authApi = {
     return data;
   },
 
-  /**
+  /**K
    * Đăng xuất → xóa token
    */
   logout: async (): Promise<void> => {
