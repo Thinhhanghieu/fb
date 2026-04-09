@@ -1,5 +1,7 @@
 # Spring Boot Application Configuration
 spring:
+  config:
+    import: optional:file:.env[.properties]
   application:
     name: fb-clone-backend
   
