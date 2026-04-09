@@ -7,20 +7,34 @@ import { ROUTES, APP_NAME, APP_DESCRIPTION } from '@/constants';
 import { useRouter } from 'next/navigation';
 import { AppButton } from '@/components/shared/AppButton';
 import { AppInput } from '@/components/shared/AppInput';
+import { authApi } from '@/services/api/auth.api';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setCurrentUser } from '@/store/slices/authSlice';
 
 export default function LoginPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ email: '', password: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // TODO: authApi.login(form) khi BE hoàn thiện
-    setTimeout(() => {
-      setIsLoading(false);
+    setError(null);
+
+    try {
+      const response = await authApi.login(form);
+      dispatch(setCurrentUser(response.user));
       router.push(ROUTES.FEED);
-    }, 1500);
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Đăng nhập thất bại. Vui lòng thử lại.';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -47,9 +61,15 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <h2 className="font-display text-2xl font-bold text-foreground">Chào mừng trở lại</h2>
+          <h2 className="font-display text-2xl font-bold text-foreground">32Chào mừng trở lại</h2>
           <p className="text-muted-foreground text-sm mt-1">Vui lòng nhập thông tin đăng nhập của bạn.</p>
         </div>
+
+        {error && (
+          <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--error-container)', color: 'var(--on-error-container)' }}>
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <AppInput

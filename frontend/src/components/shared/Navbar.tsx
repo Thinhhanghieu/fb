@@ -2,11 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, User, Bell, MessageCircle, Menu, X } from 'lucide-react';
+import { Home, User, Bell, MessageCircle, Menu, X, LogOut, Settings, UserCircle } from 'lucide-react';
 import { ROUTES } from '@/constants';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { SearchInput } from '@/components/shared/SearchInput';
+import { useAppSelector } from '@/hooks/useAppDispatch';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
 const navItems = [
   { href: ROUTES.FEED, icon: Home, label: 'Feed' },
@@ -14,6 +17,92 @@ const navItems = [
   { href: ROUTES.NOTIFICATIONS, icon: Bell, label: 'Thông báo' },
   { href: ROUTES.MESSAGES, icon: MessageCircle, label: 'Tin nhắn' },
 ];
+
+function UserAvatarDropdown() {
+  const router = useRouter();
+  const currentUser = useAppSelector((state) => state.auth.currentUser);
+  const { logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push(ROUTES.LOGIN);
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-9 h-9 rounded-full overflow-hidden border-2 border-primary/20 transition-all duration-200 hover:border-primary/50 hover:scale-105"
+      >
+        {currentUser?.avatar ? (
+          <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-primary font-bold text-sm"
+            style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)' }}>
+            {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
+          </div>
+        )}
+      </button>
+
+      {/* Dropdown Menu */}
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl overflow-hidden"
+            style={{ background: 'var(--surface-container-high)', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid var(--outline-variant)' }}>
+            {/* User Info Header */}
+            <div className="p-4 flex items-center gap-3" style={{ borderBottom: '1px solid var(--outline-variant)' }}>
+              <div className="w-10 h-10 rounded-full overflow-hidden">
+                {currentUser?.avatar ? (
+                  <img src={currentUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-primary font-bold"
+                    style={{ background: 'var(--primary-container)', color: 'var(--on-primary-container)' }}>
+                    {currentUser?.name?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="font-semibold text-foreground text-sm truncate">{currentUser?.name}</p>
+                <p className="text-xs text-muted-foreground truncate">@{currentUser?.username}</p>
+              </div>
+            </div>
+
+            {/* Menu Items */}
+            <div className="py-2">
+              <Link
+                href={ROUTES.PROFILE}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-surface-container-low transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <UserCircle size={18} className="text-muted-foreground" />
+                <span>Xem trang cá nhân</span>
+              </Link>
+              <Link
+                href={ROUTES.SETTINGS}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-surface-container-low transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings size={18} className="text-muted-foreground" />
+                <span>Cài đặt</span>
+              </Link>
+              <div style={{ borderTop: '1px solid var(--outline-variant)', margin: '4px 0' }} />
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-4 py-2.5 text-sm w-full text-left hover:bg-surface-container-low transition-colors"
+                style={{ color: 'var(--error)' }}
+              >
+                <LogOut size={18} />
+                <span>Đăng xuất</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Navbar() {
   const pathname = usePathname();
@@ -54,14 +143,13 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Avatar */}
+        {/* User Avatar with Dropdown */}
         <div className="flex items-center gap-3 ml-4">
-          <button className="w-9 h-9 rounded-full overflow-hidden border-2 border-primary/20">
-            <img src="https://i.pravatar.cc/150?img=47" alt="Avatar" className="w-full h-full object-cover" />
-          </button>
+          <UserAvatarDropdown />
         </div>
       </header>
 
+      {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-2 py-2"
         style={{ background: 'rgba(247,249,252,0.85)', backdropFilter: 'blur(24px)', boxShadow: '0 -4px 30px rgba(0,0,0,0.03)' }}>
         {navItems.map(({ href, icon: Icon, label }) => (
@@ -79,16 +167,9 @@ export function Navbar() {
             <span className="text-[10px]">{label}</span>
           </Link>
         ))}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className={cn(
-            'flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-200',
-            isMenuOpen ? 'text-primary' : 'text-muted-foreground'
-          )}
-        >
-          {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
-          <span className="text-[10px]">Menu</span>
-        </button>
+        <div className="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-xl text-xs font-medium">
+          <UserAvatarDropdown />
+        </div>
       </nav>
     </>
   );

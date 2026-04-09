@@ -14,10 +14,10 @@ export const ROUTES = {
 
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    ME: '/auth/me',
+    LOGIN: '/v1/auth/login',
+    REGISTER: '/v1/auth/register',
+    LOGOUT: '/v1/auth/logout',
+    ME: '/v1/auth/me',
   },
   POSTS: {
     LIST: '/posts',
@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
     LIST: '/messages',
     CONVERSATION: (id: string) => `/messages/${id}`,
   },
+  STORAGE: '/v1/storage',
 } as const;
 
 export const QUERY_KEYS = {

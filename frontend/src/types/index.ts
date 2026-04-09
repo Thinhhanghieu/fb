@@ -12,6 +12,21 @@ export interface User {
   isOnline?: boolean;
 }
 
+// Override fields that come from backend with different names
+export interface BackendUser {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  avatar?: string;
+  coverPhoto?: string;
+  bio?: string;
+  location?: string;
+  joinedAt: string;
+  friendsCount: number;
+  isOnline?: boolean;
+}
+
 export interface Post {
   id: string;
   author: User;
@@ -64,12 +79,12 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-  name: string;
+  fullName: string;
+  username: string;
   email: string;
   password: string;
-  confirmPassword: string;
-  birthday: string;
-  gender: 'male' | 'female' | 'other';
+  birthday?: string;
+  gender?: string;
 }
 
 export interface AuthResponse {

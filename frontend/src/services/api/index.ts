@@ -5,3 +5,4 @@ export { postsApi } from './posts.api';
 export { usersApi } from './users.api';
 export { notificationsApi } from './notifications.api';
 export { messagesApi } from './messages.api';
+export { storageApi } from './storage.api';

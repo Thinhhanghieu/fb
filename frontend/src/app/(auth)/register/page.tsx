@@ -7,12 +7,18 @@ import { ROUTES, APP_NAME } from '@/constants';
 import { useRouter } from 'next/navigation';
 import { AppButton } from '@/components/shared/AppButton';
 import { AppInput } from '@/components/shared/AppInput';
+import { authApi } from '@/services/api/auth.api';
+import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { setCurrentUser } from '@/store/slices/authSlice';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
-    name: '',
+    fullName: '',
+    username: '',
     email: '',
     password: '',
     birthday: '',
@@ -22,11 +28,25 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // TODO: authApi.register(form)
-    setTimeout(() => {
-      setIsLoading(false);
+    setError(null);
+
+    try {
+      const response = await authApi.register({
+        fullName: form.fullName,
+        username: form.username,
+        email: form.email,
+        password: form.password,
+      });
+      dispatch(setCurrentUser(response.user));
       router.push(ROUTES.FEED);
-    }, 1500);
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Đăng ký thất bại. Vui lòng thử lại.';
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -41,15 +61,32 @@ export default function RegisterPage() {
           <p className="text-muted-foreground text-sm mt-1">Nhanh chóng và dễ dàng.</p>
         </div>
 
+        {error && (
+          <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--error-container)', color: 'var(--on-error-container)' }}>
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <AppInput
-            id="register-name"
+            id="register-fullname"
             label="Họ và tên"
             type="text"
             icon={<User size={16} />}
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            value={form.fullName}
+            onChange={(e) => setForm({ ...form, fullName: e.target.value })}
             placeholder="Nguyễn Văn A"
+            required
+          />
+
+          <AppInput
+            id="register-username"
+            label="Tên đăng nhập"
+            type="text"
+            icon={<User size={16} />}
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            placeholder="nguyenvana"
             required
           />
 
@@ -83,7 +120,6 @@ export default function RegisterPage() {
             icon={<Calendar size={16} />}
             value={form.birthday}
             onChange={(e) => setForm({ ...form, birthday: e.target.value })}
-            required
           />
 
           {/* Gender */}

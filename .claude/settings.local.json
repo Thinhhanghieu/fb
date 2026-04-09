@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Bash(netstat:*)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\ECO1176-THINHND\\\\Desktop\\\\learning\\\\fb-clone\\\\backend && mvnw.cmd spring-boot:run\" 2>&1)",
+      "Bash(powershell -Command \"cd 'C:\\\\Users\\\\ECO1176-THINHND\\\\Desktop\\\\learning\\\\fb-clone\\\\backend'; .\\\\mvnw.cmd clean compile 2>&1 | Select-Object -Last 50\")",
+      "Bash(powershell -Command \"cd 'C:\\\\Users\\\\ECO1176-THINHND\\\\Desktop\\\\learning\\\\fb-clone\\\\backend'; .\\\\mvnw.cmd clean compile 2>&1\" 2>&1)",
+      "Bash(powershell -Command \"cd 'C:\\\\Users\\\\ECO1176-THINHND\\\\Desktop\\\\learning\\\\fb-clone\\\\backend'; .\\\\mvnw.cmd spring-boot:run 2>&1\" 2>&1)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\ECO1176-THINHND\\\\Desktop\\\\learning\\\\fb-clone\\\\backend && mvnw.cmd spring-boot:run > server.log 2>&1\")",
+      "Bash(powershell -Command \"Test-NetConnection -ComputerName localhost -Port 8080 | Select-Object TcpTestSucceeded\")",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\ECO1176-THINHND\\\\Desktop\\\\learning\\\\fb-clone\\\\backend\\\\server.log' -Tail 30 -ErrorAction SilentlyContinue\")",
+      "Bash(cmd /c \"java -version 2>&1\" 2>&1)"
+    ]
+  }
+}
