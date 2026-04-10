@@ -1,7 +1,5 @@
 # Spring Boot Application Configuration
 spring:
-  config:
-    import: optional:file:.env[.properties]
   application:
     name: fb-clone-backend
   
@@ -34,7 +32,7 @@ app:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   supabase:
     url: ${SUPABASE_URL:https://cxcwzxlltyszurgpiyyu.supabase.co}
-    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:your_supabase_service_role_key_here}
+    service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4Y3d6eGxsdHlzenVyZ3BpeXl1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTQ1NzQ4OSwiZXhwIjoyMDkxMDMzNDg5fQ.1ByEtb35uwwBzPPU3k7LTFwuGpf3IMFkmGzfPidv_w4}
 
 # Server Configuration
 server:

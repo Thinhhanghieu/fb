@@ -20,11 +20,11 @@ export const API_ENDPOINTS = {
     ME: '/v1/auth/me',
   },
   POSTS: {
-    LIST: '/posts',
-    DETAIL: (id: string) => `/posts/${id}`,
-    CREATE: '/posts',
-    LIKE: (id: string) => `/posts/${id}/like`,
-    COMMENTS: (id: string) => `/posts/${id}/comments`,
+    LIST: '/v1/posts',
+    DETAIL: (id: string) => `/v1/posts/${id}`,
+    CREATE: '/v1/posts',
+    LIKE: (id: string) => `/v1/posts/${id}/like`,
+    COMMENTS: (id: string) => `/v1/posts/${id}/comments`,
   },
   USERS: {
     PROFILE: (id: string) => `/users/${id}`,

@@ -1,5 +1,4 @@
-import { MOCK_POSTS } from '@/constants/mockData';
-import { PostCard, PostCardSkeleton } from '@/components/shared/PostCard';
+import { FeedList } from '@/components/FeedList';
 import { CreatePost } from '@/components/shared/CreatePost';
 import { StoryBar } from '@/components/shared/StoryBar';
 import { LeftSidebar, RightSidebar } from '@/components/shared/Sidebars';
@@ -21,11 +20,7 @@ export default function FeedPage() {
         <CreatePost />
 
         {/* Posts */}
-        <section className="space-y-4">
-          {MOCK_POSTS.map((post) => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </section>
+        <FeedList />
       </div>
 
       {/* Right Sidebar */}

@@ -1,13 +1,15 @@
 import React, { useState, useRef } from 'react';
 import { useCreatePost } from '@/hooks/useCreatePost';
+import { Avatar } from './shared/Avatar';
+import { MOCK_USER } from '@/constants/mockData';
+import { X, Image as ImageIcon, Smile, MapPin } from 'lucide-react';
 
-export const CreatePostEditor = () => {
+export const CreatePostEditor = ({ onClose }: { onClose: () => void }) => {
   const [content, setContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Gọi Hook mình vừa viết
   const { mutateAsync: createPost, isPending } = useCreatePost();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,89 +38,116 @@ export const CreatePostEditor = () => {
         file: selectedFile,
       });
 
-      // Reset form sau khi thanh cong
-      setContent('');
-      handleRemoveImage();
-      alert('Đăng bài thành công!');
+      // Đóng modal sau khi đang thành công
+      onClose();
+      // Tuỳ chọn: bạn có thể trigger 1 Global Toast báo thành công ở đây
     } catch (error) {
       console.error('Lỗi khi đăng bài:', error);
-      alert('Có lỗi xảy ra khi up bài, hãy thử lại!');
+      alert('Có lỗi xảy ra khi tải bài viết lên. Bạn thử lại nhé!');
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 max-w-2xl mx-auto mb-6">
-      <form onSubmit={handleSubmit}>
-        <div className="flex gap-3 mb-4">
-          {/* Chỗ này bạn có thể thay bằng component Avatar động sau */}
-          <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden flex-shrink-0">
-            <img src="https://ui-avatars.com/api/?name=User" alt="Avatar" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div 
+        className="w-full max-w-[500px] bg-white rounded-xl shadow-2xl overflow-hidden flex flex-col"
+        style={{ background: 'var(--surface)' }}
+      >
+        {/* Header Modal */}
+        <div className="relative border-b py-4 text-center">
+          <h2 className="text-xl font-bold">Tạo bài viết</h2>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-600"
+            disabled={isPending}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 overflow-y-auto max-h-[75vh]">
+          {/* User Info */}
+          <div className="flex items-center gap-3 mb-4">
+            <Avatar src={MOCK_USER.avatar} alt={MOCK_USER.name} size="md" />
+            <div>
+              <p className="font-semibold text-[15px]">{MOCK_USER.name}</p>
+              <span className="text-xs bg-gray-200 px-2 py-1 rounded-md font-medium text-gray-600 mt-1 inline-block">
+                Công khai
+              </span>
+            </div>
           </div>
+
+          {/* Text Area */}
           <textarea
-            className="w-full bg-gray-100 rounded-2xl p-3 outline-none resize-none placeholder-gray-500"
-            rows={selectedFile ? 2 : 3}
-            placeholder="Bạn đang nghĩ gì thế?"
+            className="w-full text-lg outline-none resize-none placeholder-gray-500 bg-transparent mb-2"
+            rows={selectedFile || imagePreview ? 2 : 4}
+            placeholder={`Bạn đang nghĩ gì thế, ${MOCK_USER.name.split(' ')[0]}?`}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             disabled={isPending}
+            autoFocus
           />
-        </div>
 
-        {/* Khung Preview Ảnh */}
-        {imagePreview && (
-          <div className="relative mb-4 rounded-lg overflow-hidden border border-gray-200">
-            <img src={imagePreview} alt="Preview" className="w-full max-h-96 object-cover" />
-            <button
-              type="button"
-              onClick={handleRemoveImage}
-              className="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 transition"
-              disabled={isPending}
-            >
-              ✕
-            </button>
+          {/* Image Preview */}
+          {imagePreview && (
+            <div className="relative mb-4 border border-gray-300 p-2 rounded-lg bg-gray-50 group">
+              <img src={imagePreview} alt="Preview" className="w-full max-h-64 object-contain rounded-md" />
+              <button
+                type="button"
+                onClick={handleRemoveImage}
+                className="absolute top-4 right-4 bg-white/80 backdrop-blur-md border hover:bg-white w-8 h-8 rounded-full flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition"
+                disabled={isPending}
+              >
+                <X size={16} className="text-gray-700" />
+              </button>
+            </div>
+          )}
+
+          {/* Attachment Bar */}
+          <div className="border border-gray-300 rounded-lg p-3 flex items-center justify-between mb-4 shadow-sm">
+            <span className="font-semibold text-sm cursor-default">
+              Thêm vào bài viết
+            </span>
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 hover:bg-gray-100 rounded-full transition text-green-500"
+                disabled={isPending}
+              >
+                <ImageIcon size={24} />
+              </button>
+              <button type="button" className="p-2 hover:bg-gray-100 rounded-full transition text-yellow-500" disabled={isPending}>
+                <Smile size={24} />
+              </button>
+              <button type="button" className="p-2 hover:bg-gray-100 rounded-full transition text-red-500" disabled={isPending}>
+                <MapPin size={24} />
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                accept="image/*"
+                className="hidden"
+              />
+            </div>
           </div>
-        )}
 
-        {/* Thanh công cụ */}
-        <div className="border border-gray-200 rounded-lg p-3 flex items-center justify-between">
-          <span className="font-semibold text-gray-600 cursor-default">
-            Thêm vào bài viết
-          </span>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="p-2 hover:bg-gray-100 rounded-full transition flex items-center gap-1 text-green-500 font-medium"
-              disabled={isPending}
-            >
-              {/* Fake Icon ảnh */}
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              accept="image/*"
-              className="hidden"
-            />
-          </div>
-        </div>
-
-        {/* Nút Submit */}
-        <button
-          type="submit"
-          disabled={(!content.trim() && !selectedFile) || isPending}
-          className={`w-full mt-4 py-2 font-bold rounded-lg transition ${
-            (!content.trim() && !selectedFile) || isPending
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {isPending ? 'Đang đăng tải...' : 'Đăng'}
-        </button>
-      </form>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={(!content.trim() && !selectedFile) || isPending}
+            className={`w-full py-2.5 font-bold rounded-lg transition ${
+              (!content.trim() && !selectedFile) || isPending
+                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+            }`}
+          >
+            {isPending ? 'Đang tải lên...' : 'Đăng'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
