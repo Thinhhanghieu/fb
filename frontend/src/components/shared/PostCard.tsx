@@ -1,12 +1,16 @@
 'use client';
 
-import { Heart, MessageCircle, Share2, MoreHorizontal, ThumbsUp } from 'lucide-react';
-import { Post } from '@/types';
+import { MessageCircle, Share2, MoreHorizontal, ThumbsUp, Send } from 'lucide-react';
+import { Post, PostComment } from '@/types';
 import { Avatar } from './Avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { postsApi, PaginatedResponse } from '@/services/api/posts.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QUERY_KEYS } from '@/constants';
+import { AppInput } from './AppInput';
 
 interface PostCardProps {
   post: Post;
@@ -24,11 +28,64 @@ function formatTime(dateStr: string) {
 export function PostCard({ post, onLike }: PostCardProps) {
   const [liked, setLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post.likesCount);
+  const [showComments, setShowComments] = useState(false);
+  const [commentContent, setCommentContent] = useState('');
+  
+  const queryClient = useQueryClient();
+
+  // Mutation cho Like
+  const likeMutation = useMutation({
+    mutationFn: () => postsApi.toggleLike(post.id),
+    onSuccess: (updatedPost) => {
+      setLiked(updatedPost.isLiked);
+      setLikesCount(updatedPost.likesCount);
+      onLike?.(post.id);
+      // Update cache if needed
+      queryClient.setQueryData([QUERY_KEYS.POSTS], (oldData: PaginatedResponse<Post> | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((p: Post) => p.id === post.id ? updatedPost : p)
+        };
+      });
+    },
+  });
+
+  // Query lấy comments
+  const { data: commentsData, isLoading: isLoadingComments } = useQuery({
+    queryKey: [QUERY_KEYS.POSTS, post.id, 'comments'],
+    queryFn: () => postsApi.getComments(post.id),
+    enabled: showComments,
+  });
+
+  // Mutation thêm comment
+  const addCommentMutation = useMutation({
+    mutationFn: (content: string) => postsApi.addComment(post.id, content),
+    onSuccess: (updatedPost) => {
+      setCommentContent('');
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.POSTS, post.id, 'comments'] });
+      // Update post stats in cache
+      queryClient.setQueryData([QUERY_KEYS.POSTS], (oldData: PaginatedResponse<Post> | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: oldData.data.map((p: Post) => p.id === post.id ? updatedPost : p)
+        };
+      });
+    },
+  });
 
   const handleLike = () => {
+    // Optimistic UI
     setLiked(!liked);
     setLikesCount(liked ? likesCount - 1 : likesCount + 1);
-    onLike?.(post.id);
+    likeMutation.mutate();
+  };
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentContent.trim() || addCommentMutation.isPending) return;
+    addCommentMutation.mutate(commentContent);
   };
 
   return (
@@ -104,7 +161,13 @@ export function PostCard({ post, onLike }: PostCardProps) {
           <ThumbsUp size={18} className={liked ? 'fill-primary' : ''} />
           Thích
         </button>
-        <button className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-all duration-200">
+        <button 
+          onClick={() => setShowComments(!showComments)}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:bg-muted transition-all duration-200',
+            showComments && 'text-primary bg-primary/10'
+          )}
+        >
           <MessageCircle size={18} />
           Bình luận
         </button>
@@ -113,6 +176,59 @@ export function PostCard({ post, onLike }: PostCardProps) {
           Chia sẻ
         </button>
       </div>
+
+      {/* Comments Section */}
+      {showComments && (
+        <div className="p-4 pt-0 space-y-4" style={{ background: 'var(--surface-container-low)' }}>
+          {/* Comment Input */}
+          <form onSubmit={handleAddComment} className="flex items-center gap-2 pt-2 border-t border-border/50">
+            <Avatar size="sm" alt="My Avatar" />
+            <div className="flex-1 relative">
+              <AppInput
+                placeholder="Viết bình luận..."
+                value={commentContent}
+                onChange={(e) => setCommentContent(e.target.value)}
+                className="pr-10"
+              />
+              <button 
+                type="submit"
+                disabled={!commentContent.trim() || addCommentMutation.isPending}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-primary disabled:text-muted-foreground"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </form>
+
+          {/* Comment List */}
+          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+            {isLoadingComments ? (
+              <div className="flex justify-center py-4">
+                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : commentsData?.data.length === 0 ? (
+              <p className="text-center text-xs text-muted-foreground py-4">Chưa có bình luận nào.</p>
+            ) : (
+              commentsData?.data.map((comment: PostComment) => (
+                <div key={comment.id} className="flex gap-3">
+                  <Avatar src={comment.author.avatar} alt={comment.author.name} size="sm" />
+                  <div className="flex-1">
+                    <div className="bg-muted/50 p-3 rounded-2xl rounded-tl-none inline-block max-w-full">
+                      <p className="text-xs font-bold text-foreground">{comment.author.name}</p>
+                      <p className="text-sm text-foreground leading-normal">{comment.content}</p>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 ml-1">
+                      <p className="text-[10px] text-muted-foreground">{formatTime(comment.createdAt)}</p>
+                      <button className="text-[10px] font-bold text-muted-foreground hover:underline">Thích</button>
+                      <button className="text-[10px] font-bold text-muted-foreground hover:underline">Phản hồi</button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
     </article>
   );
 }

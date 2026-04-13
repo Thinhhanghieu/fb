@@ -39,7 +39,7 @@ export interface Post {
   createdAt: string;
 }
 
-export interface Comment {
+export interface PostComment {
   id: string;
   author: User;
   content: string;

@@ -3,7 +3,7 @@
  * Xử lý toàn bộ các request liên quan đến bài viết.
  */
 import axiosClient from '@/lib/axiosClient';
-import { Post } from '@/types';
+import { Post, PostComment } from '@/types';
 import { API_ENDPOINTS } from '@/constants';
 
 export interface CreatePostPayload {
@@ -53,16 +53,27 @@ export const postsApi = {
   /**
    * Like / Unlike bài viết
    */
-  toggleLike: async (id: string): Promise<{ liked: boolean; likesCount: number }> => {
-    const { data } = await axiosClient.post(API_ENDPOINTS.POSTS.LIKE(id));
+  toggleLike: async (id: string): Promise<Post> => {
+    const { data } = await axiosClient.post<Post>(API_ENDPOINTS.POSTS.LIKE(id));
+    return data;
+  },
+
+  /**
+   * Thêm bình luận mới
+   */
+  addComment: async (id: string, content: string): Promise<Post> => {
+    const { data } = await axiosClient.post<Post>(API_ENDPOINTS.POSTS.COMMENTS(id), { content });
     return data;
   },
 
   /**
    * Lấy comments của bài viết
    */
-  getComments: async (id: string) => {
-    const { data } = await axiosClient.get(API_ENDPOINTS.POSTS.COMMENTS(id));
+  getComments: async (id: string, page = 1, limit = 10): Promise<PaginatedResponse<PostComment>> => {
+    const { data } = await axiosClient.get<PaginatedResponse<PostComment>>(
+      API_ENDPOINTS.POSTS.COMMENTS(id),
+      { params: { page, limit } }
+    );
     return data;
   },
 

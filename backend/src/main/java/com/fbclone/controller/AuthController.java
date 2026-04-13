@@ -6,6 +6,7 @@ import com.fbclone.dto.AuthResponse;
 import com.fbclone.dto.RegisterRequest;
 import com.fbclone.dto.UserResponse;
 import com.fbclone.entity.User;
+import com.fbclone.exception.NotFoundException;
 import com.fbclone.repository.UserRepository;
 import com.fbclone.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -43,24 +44,23 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody AuthRequest request) {
-        return authService.authenticate(request.getEmail(), request.getPassword())
-                .map(user -> {
-                    String token = jwtProvider.generateToken(user.getEmail());
-                    return ResponseEntity.ok(AuthResponse.builder()
-                            .token(token)
-                            .type("Bearer")
-                            .user(UserResponse.fromEntity(user))
-                            .build());
-                })
-                .orElse(ResponseEntity.status(400).build());
+        User user = authService.authenticate(request.getEmail(), request.getPassword());
+        String token = jwtProvider.generateToken(user.getEmail());
+        
+        return ResponseEntity.ok(AuthResponse.builder()
+                .token(token)
+                .type("Bearer")
+                .user(UserResponse.fromEntity(user))
+                .build());
     }
 
     @GetMapping("/me")
     public ResponseEntity<UserResponse> getMe(Authentication authentication) {
         String email = authentication.getName();
-        return userRepository.findByEmail(email)
-                .map(user -> ResponseEntity.ok(UserResponse.fromEntity(user)))
-                .orElse(ResponseEntity.status(404).build());
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User profile not found"));
+        
+        return ResponseEntity.ok(UserResponse.fromEntity(user));
     }
 
     @GetMapping("/hello")

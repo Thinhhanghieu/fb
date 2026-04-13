@@ -20,6 +20,7 @@ public class PostResponse {
     private int likesCount;
     private int commentsCount;
     private int sharesCount;
+    private boolean isLiked;
     private LocalDateTime createdAt;
     private UserResponse author;
 }
