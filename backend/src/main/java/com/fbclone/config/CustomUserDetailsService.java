@@ -1,6 +1,6 @@
 package com.fbclone.config;
 
-import com.fbclone.repository.UserRepository;
+import com.fbclone.features.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;

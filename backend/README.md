@@ -5,7 +5,7 @@
 The project implements a centralized error handling mechanism to ensure consistent API responses.
 
 ### 📁 Package Structure
-`com.fbclone.exception`
+`com.fbclone.core.exception`
 - `GlobalExceptionHandler`: The central hub for catching exceptions.
 - `NotFoundException`: For 404 errors.
 - `BadRequestException`: For 400 errors (validation, logic errors).

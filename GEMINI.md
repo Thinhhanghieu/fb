@@ -71,18 +71,20 @@ npm run lint                  # ESLint checks
 4. `AuthGuard` component protects routes in the `(main)` route group.
 
 ### Error Handling
-- **Global Exception Handler:** The backend uses `@RestControllerAdvice` in `com.fbclone.exception.GlobalExceptionHandler` to unify error responses.
+- **Global Exception Handler:** The backend uses `@RestControllerAdvice` in `com.fbclone.core.exception.GlobalExceptionHandler` to unify error responses.
 - **Unified Format:** All errors return a consistent JSON structure (`ErrorResponse.java`): `{ "message": "...", "status": 4xx/5xx, "timestamp": "...", "path": "..." }`.
-- **Custom Exceptions:** Use specific exceptions for different scenarios:
+- **Custom Exceptions:** Use specific exceptions (stored in `com.fbclone.core.exception`) for different scenarios:
     - `NotFoundException`: Returns HTTP 404.
     - `BadRequestException`: Returns HTTP 400.
     - `UnauthorizedException`: Returns HTTP 401.
-- **Service Standard:** Do NOT use complex `if-else` or `try-catch` in Controllers for error handling. Throw custom exceptions in the Service layer, and let the Global Handler catch them.
+- **Service Standard:** Throw custom exceptions in the Service layer, and let the Global Handler catch them.
 
 ### Development Standards
+- **Backend Architecture (Package-by-Feature):** The backend is organized by business modules (features) rather than technical layers. Each module (e.g., `post`, `auth`, `user`) contains its own Controllers, Services, Repositories, Entities, and DTOs.
+- **Service Interfaces:** Core logic is defined in Interfaces (e.g., `PostService`) and implemented in classes (e.g., `PostServiceImpl`) to support abstraction and testing.
 - **Strict TypeScript:** No `any` types; define explicit interfaces in `types/index.ts`.
 - **CSS:** Use Tailwind v4 classes and existing CSS variables for consistency.
-- **Backend:** Use DTOs for request/response mapping; avoid exposing JPA Entities directly in controllers.
+- **Backend DTOs:** Always use DTOs for request/response mapping; avoid exposing JPA Entities directly in controllers.
 - **Testing:** Add tests for new features (Playwright for FE, Spring Boot Test for BE).
 
 ---
@@ -96,7 +98,12 @@ npm run lint                  # ESLint checks
 - `hooks/`: Custom business logic hooks (e.g., `useAuth`, `useFeed`).
 
 ### Backend (`backend/src/main/java/com/fbclone/`)
-- `config/`: Security, JWT, and Cloud Storage configurations.
-- `controller/`: REST endpoints for Auth, Posts, and Storage.
-- `dto/`: Data Transfer Objects for API contracts.
-- `service/`: Core business logic implementation.
+- `config/`: System-wide configurations (Security, JWT, Storage).
+- `core/`: Common components used across all modules.
+    - `dto/`: Global DTOs like `PaginatedResponse` and `ErrorResponse`.
+    - `exception/`: Centralized error handling and custom exceptions.
+- `features/`: Business modules (Self-contained logic).
+    - `auth/`: Login, registration, and authentication logic.
+    - `post/`: Posts, likes, and comments (includes Entity, Repo, Service, DTO).
+    - `user/`: User profile and account management.
+    - `storage/`: File upload and storage service implementation.
