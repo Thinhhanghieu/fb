@@ -27,13 +27,14 @@ export const API_ENDPOINTS = {
     COMMENTS: (id: string) => `/v1/posts/${id}/comments`,
   },
   USERS: {
-    PROFILE: (id: string) => `/users/${id}`,
-    FRIENDS: (id: string) => `/users/${id}/friends`,
+    PROFILE: (id: string) => `/v1/users/${id}`,
+    FRIENDS: (id: string) => `/v1/users/${id}/friends`,
+    SEARCH: '/v1/users/search',
   },
-  NOTIFICATIONS: '/notifications',
+  NOTIFICATIONS: '/v1/notifications',
   MESSAGES: {
-    LIST: '/messages',
-    CONVERSATION: (id: string) => `/messages/${id}`,
+    LIST: '/v1/messages',
+    CONVERSATION: (id: string) => `/v1/messages/${id}`,
   },
   STORAGE: '/v1/storage',
 } as const;
@@ -45,6 +46,12 @@ export const QUERY_KEYS = {
   NOTIFICATIONS: 'notifications',
   MESSAGES: 'messages',
   CONVERSATIONS: 'conversations',
+  SEARCH: 'search',
+} as const;
+
+export const UI_CONSTANTS = {
+  SEARCH_DEBOUNCE_MS: 300,
+  MOBILE_BREAKPOINT: 768,
 } as const;
 
 export const APP_NAME = 'Pulse';

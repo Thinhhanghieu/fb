@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi } from '@/services/api/auth.api';
 import { useAppDispatch } from './useAppDispatch';
 import { setCurrentUser, clearCurrentUser } from '@/store/slices/authSlice';
@@ -6,6 +6,7 @@ import { tokenStorage } from '@/lib/axiosClient';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
 
   const {
     data: user,
@@ -27,8 +28,13 @@ export const useAuth = () => {
     try {
       await authApi.logout();
     } finally {
+      // 1. Xóa Redux State
       dispatch(clearCurrentUser());
+      // 2. Xóa Token khỏi localStorage
       tokenStorage.remove();
+      // 3. Xóa sạch Cache của TanStack Query (Xóa hết dữ liệu nhạy cảm)
+      queryClient.clear();
+      // 4. Reload hoặc điều hướng về trang Login (Tùy component gọi)
     }
   };
 

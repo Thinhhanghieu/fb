@@ -20,6 +20,13 @@ export const messagesApi = {
     return data;
   },
 
+  getOrCreateConversation: async (userId: string): Promise<Conversation> => {
+    const { data } = await axiosClient.post<Conversation>(
+      `${API_ENDPOINTS.MESSAGES.LIST}/conversation/user/${userId}`
+    );
+    return data;
+  },
+
   sendMessage: async (
     conversationId: string,
     content: string

@@ -21,10 +21,10 @@ export function Avatar({ src, alt, size = 'md', isOnline, className }: AvatarPro
     <div className={cn('relative flex-shrink-0', sizeMap[size], className)}>
       <div className={cn('w-full h-full rounded-full overflow-hidden bg-muted border-2 border-white shadow-sm')}>
         {src ? (
-          <img src={src} alt={alt} className="w-full h-full object-cover" />
+          <img src={src} alt={alt || 'User'} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-primary font-bold font-display" style={{ background: 'var(--secondary)' }}>
-            {alt.charAt(0).toUpperCase()}
+            {alt ? alt.charAt(0).toUpperCase() : '?'}
           </div>
         )}
       </div>

@@ -20,7 +20,7 @@ public class AuthController {
     private final UserRepository userRepository;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<AuthResponse> register(@jakarta.validation.Valid @RequestBody RegisterRequest request) {
         User user = User.builder()
                 .email(request.getEmail())
                 .password(request.getPassword())
@@ -62,5 +62,12 @@ public class AuthController {
     @GetMapping("/hello")
     public ResponseEntity<String> hello() {
         return ResponseEntity.ok("Backend is running!");
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout() {
+        // Since we are using stateless JWT, we can just return success.
+        // In more complex scenarios, you might want to blacklist the token.
+        return ResponseEntity.ok().build();
     }
 }

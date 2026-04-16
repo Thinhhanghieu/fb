@@ -1,19 +1,21 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useParams, useRouter } from 'next/navigation';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { usersApi } from '@/services/api/users.api';
+import { messagesApi } from '@/services/api/messages.api';
 import { useFriends } from '@/hooks/useFriends';
 import { useAuth } from '@/hooks/useAuth';
 import { PostCard } from '@/components/shared/PostCard';
 import { Avatar } from '@/components/shared/Avatar';
 import { SectionCard } from '@/components/shared/SectionCard';
 import { AppButton } from '@/components/shared/AppButton';
-import { Camera, MapPin, Users, UserPlus, UserMinus, UserCheck, Loader2, X } from 'lucide-react';
+import { Camera, MapPin, Users, UserPlus, UserMinus, UserCheck, Loader2, X, MessageCircle } from 'lucide-react';
 import { MOCK_POSTS, MOCK_FRIENDS } from '@/constants/mockData';
 
 export default function UserProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const userId = params.id as string;
   const { user: currentUser } = useAuth();
   const { sendRequest, acceptRequest, declineRequest, removeFriend, isLoading: isFriendActionLoading } = useFriends();
@@ -22,6 +24,15 @@ export default function UserProfilePage() {
     queryKey: ['profile', userId],
     queryFn: () => usersApi.getProfile(userId),
     enabled: !!userId,
+  });
+
+  // Mutation để lấy hoặc tạo hội thoại
+  const startChatMutation = useMutation({
+    mutationFn: () => messagesApi.getOrCreateConversation(userId),
+    onSuccess: (conversation) => {
+      // Chuyển hướng sang trang messages và truyền conversationId qua query param
+      router.push(`/messages?c=${conversation.id}`);
+    }
   });
 
   if (isLoading) {
@@ -92,7 +103,7 @@ export default function UserProfilePage() {
             <AppButton 
               variant="secondary" 
               size="sm" 
-              icon={<Loader2 className="animate-spin" size={15} />}
+              icon={<Clock size={15} className="mr-1" />}
               disabled
             >
               Đã gửi lời mời
@@ -132,7 +143,17 @@ export default function UserProfilePage() {
             </div>
             <div className="flex gap-2 mb-2">
               {renderFriendshipButtons()}
-              <AppButton variant="secondary" size="sm">Nhắn tin</AppButton>
+              {!isOwnProfile && (
+                <AppButton 
+                  variant="secondary" 
+                  size="sm" 
+                  icon={<MessageCircle size={15} />}
+                  onClick={() => startChatMutation.mutate()}
+                  isLoading={startChatMutation.isPending}
+                >
+                  Nhắn tin
+                </AppButton>
+              )}
             </div>
           </div>
 
@@ -186,5 +207,26 @@ export default function UserProfilePage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Helper icons
+function Clock({ size, className }: { size: number, className?: string }) {
+  return (
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <circle cx="12" cy="12" r="10" />
+      <polyline points="12 6 12 12 16 14" />
+    </svg>
   );
 }

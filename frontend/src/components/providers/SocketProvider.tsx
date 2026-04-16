@@ -11,6 +11,7 @@ import { QUERY_KEYS } from '@/constants';
 interface SocketContextType {
   isConnected: boolean;
   subscribe: (destination: string, callback: (message: IMessage) => void) => () => void;
+  publish: (destination: string, body: any) => void;
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -41,45 +42,73 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '/ws') || 'http://localhost:8080/ws';
+    const token = localStorage.getItem('fb_clone_token'); 
+    console.log('[WebSocket] Attempting connection with token:', token ? 'Exists' : 'Missing');
     
     const client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
+      connectHeaders: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'token': token || '', // Dự phòng thêm header 'token'
+      },
       reconnectDelay: 5000,
       heartbeatIncoming: 4000,
       heartbeatOutgoing: 4000,
-      onConnect: () => {
+      onConnect: (frame) => {
         setIsConnected(true);
-        console.log('Connected to WebSocket');
+        console.log('[WebSocket] Connected as:', currentUser.email);
+        console.log('[WebSocket] Session ID:', frame.headers['user-name'] || 'Assigned by server');
 
-        // Tự động subscribe thông báo cho user này
-        client.subscribe(`/user/${currentUser.email}/topic/notifications`, (message) => {
+        // Subscribe thông báo
+        client.subscribe('/user/topic/notifications', (message) => {
+          console.log('[WebSocket] Notification received');
           const newNotification: Notification = JSON.parse(message.body);
           
-          // Khi có thông báo mới:
-          // 1. Cập nhật danh sách thông báo trong cache
           queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS, 1, 50], (oldData: any) => {
             if (!oldData) return oldData;
             return {
               ...oldData,
               data: [newNotification, ...oldData.data],
-              total: oldData.total + 1
+              total: (oldData.total || 0) + 1
             };
           });
 
-          // 2. Cập nhật số lượng tin chưa đọc (Unread Count)
           queryClient.setQueryData(['notifications', 'unread-count'], (oldCount: number = 0) => oldCount + 1);
+        });
+
+        // Subscribe tin nhắn chat
+        client.subscribe('/user/queue/messages', (message) => {
+          console.log('[WebSocket] New chat message received:', message.body);
+          const newMessage: any = JSON.parse(message.body);
+          
+          // Cập nhật cache tin nhắn
+          // Đảm bảo conversationId được so sánh chính xác (String)
+          queryClient.setQueryData(['messages', newMessage.conversationId], (oldMessages: any[] = []) => {
+            console.log('[WebSocket] Updating cache for conversation:', newMessage.conversationId);
+            const exists = oldMessages.some(m => m.id === newMessage.id);
+            if (exists) return oldMessages;
+            return [...oldMessages, newMessage];
+          });
+
+          // Cập nhật danh sách hội thoại
+          queryClient.invalidateQueries({ queryKey: ['conversations'] });
         });
       },
       onDisconnect: () => {
         setIsConnected(false);
-        console.log('Disconnected from WebSocket');
+        console.log('[WebSocket] Disconnected');
       },
+      onStompError: (frame) => {
+        console.error('[WebSocket] STOMP Error:', frame.headers['message']);
+        console.error('[WebSocket] Details:', frame.body);
+      }
     });
 
     client.activate();
     stompClientRef.current = client;
 
     return () => {
+      console.log('[WebSocket] Deactivating connection...');
       client.deactivate();
       stompClientRef.current = null;
     };
@@ -91,8 +120,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => subscription.unsubscribe();
   };
 
+  const publish = (destination: string, body: any) => {
+    if (!stompClientRef.current || !isConnected) {
+      console.warn('[WebSocket] Cannot publish: Not connected');
+      return;
+    }
+    stompClientRef.current.publish({
+      destination,
+      body: JSON.stringify(body),
+    });
+  };
+
   return (
-    <SocketContext.Provider value={{ isConnected, subscribe }}>
+    <SocketContext.Provider value={{ isConnected, subscribe, publish }}>
       {children}
     </SocketContext.Provider>
   );

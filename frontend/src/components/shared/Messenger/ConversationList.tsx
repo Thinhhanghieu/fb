@@ -62,15 +62,22 @@ export function ConversationList({
             const lastMsg = conv.lastMessage;
 
             return (
-              <button
+              <div
                 key={conv.id}
                 onClick={() => onSelect(conv)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    onSelect(conv);
+                  }
+                }}
                 className={cn(
-                  'flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-200 text-left group',
+                  'flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-200 text-left group cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary/20',
                   isActive ? 'bg-primary/10' : 'hover:bg-muted'
                 )}
               >
-                <div className="relative flex-shrink-0">
+                <div className="relative flex-shrink-0 pointer-events-none">
                   <Avatar 
                     src={otherParticipant.avatar} 
                     alt={otherParticipant.name} 
@@ -79,7 +86,7 @@ export function ConversationList({
                   />
                 </div>
                 
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pointer-events-none">
                   <div className="flex items-center justify-between gap-2">
                     <p className={cn(
                       'text-[15px] truncate',
@@ -113,11 +120,17 @@ export function ConversationList({
                   </div>
                 </div>
                 
-                {/* Hover action */}
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                  <AppButton variant="icon" size="sm" icon={<MoreHorizontal size={16} />} className="h-8 w-8" />
+                {/* Hover action - Sử dụng div thay vì button để tránh lồng nhau */}
+                <div 
+                  className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted-foreground/10" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Hành động thêm ở đây
+                  }}
+                >
+                  <MoreHorizontal size={16} />
                 </div>
-              </button>
+              </div>
             );
           })
         )}

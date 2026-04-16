@@ -1,53 +1,71 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ConversationList } from '@/components/shared/Messenger/ConversationList';
 import { ChatWindow } from '@/components/shared/Messenger/ChatWindow';
 import { useAppSelector } from '@/hooks/useAppDispatch';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { messagesApi } from '@/services/api/messages.api';
 import { Conversation, Message } from '@/types';
 import { cn } from '@/lib/utils';
-import { MOCK_CONVERSATIONS } from '@/constants/mockData';
+import { useSocket } from '@/components/providers/SocketProvider';
 
 export default function MessagesPage() {
   const currentUser = useAppSelector((state) => state.auth.currentUser);
+  const searchParams = useSearchParams();
+  const conversationIdFromUrl = searchParams.get('c');
+  
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const queryClient = useQueryClient();
+  const { publish } = useSocket();
 
   // 1. Fetch danh sách hội thoại
   const { data: conversations = [], isLoading: isLoadingConversations } = useQuery({
     queryKey: ['conversations'],
     queryFn: messagesApi.getConversations,
-    // Trả về mock data nếu API chưa có dữ liệu hoặc lỗi (cho demo giao diện)
-    placeholderData: MOCK_CONVERSATIONS,
   });
+
+  // Tự động chọn cuộc hội thoại từ URL
+  useEffect(() => {
+    if (conversationIdFromUrl && conversations.length > 0) {
+      const found = conversations.find(c => c.id === conversationIdFromUrl);
+      if (found) {
+        setSelectedConversation(found);
+      }
+    }
+  }, [conversationIdFromUrl, conversations]);
 
   // 2. Fetch tin nhắn của hội thoại đang chọn
   const { data: messages = [], isLoading: isLoadingMessages } = useQuery({
     queryKey: ['messages', selectedConversation?.id],
     queryFn: () => selectedConversation ? messagesApi.getMessages(selectedConversation.id) : Promise.resolve([]),
     enabled: !!selectedConversation,
-  });
-
-  // 3. Mutation gửi tin nhắn
-  const sendMessageMutation = useMutation({
-    mutationFn: ({ conversationId, content }: { conversationId: string; content: string }) =>
-      messagesApi.sendMessage(conversationId, content),
-    onSuccess: (newMessage) => {
-      // Cập nhật cache ngay lập tức
-      queryClient.setQueryData(['messages', selectedConversation?.id], (old: Message[] = []) => [...old, newMessage]);
-      // Cập nhật tin nhắn cuối trong danh sách hội thoại
-      queryClient.invalidateQueries({ queryKey: ['conversations'] });
-    },
+    // staleTime: 1000 * 60 * 5, // Dữ liệu được coi là mới trong 5 phút, không gọi lại API khi chuyển tab
+    // gcTime: 1000 * 60 * 30, // Giữ trong bộ nhớ đệm 30 phút
   });
 
   const handleSendMessage = (content: string) => {
-    if (!selectedConversation) return;
-    sendMessageMutation.mutate({ conversationId: selectedConversation.id, content });
+    if (!selectedConversation || !currentUser) return;
+    
+    publish('/app/chat.sendMessage', {
+      conversationId: selectedConversation.id,
+      content: content
+    });
+
+    const tempId = Date.now().toString();
+    const optimisticMessage: Message = {
+      id: tempId,
+      conversationId: selectedConversation.id,
+      sender: currentUser,
+      content: content,
+      createdAt: new Date().toISOString(),
+      isRead: false
+    } as any;
+
+    queryClient.setQueryData(['messages', selectedConversation.id], (old: Message[] = []) => [...old, optimisticMessage]);
   };
 
-  // Nếu không có user (chưa login), không render
   if (!currentUser) return null;
 
   return (
@@ -55,7 +73,6 @@ export default function MessagesPage() {
       <div 
         className="flex h-full rounded-2xl overflow-hidden border border-border/50 shadow-premium bg-background"
       >
-        {/* Left: Conversation List */}
         <div 
           className={cn(
             "w-full md:w-80 lg:w-96 border-r border-border/50 flex-shrink-0 transition-all",
@@ -71,7 +88,6 @@ export default function MessagesPage() {
           />
         </div>
 
-        {/* Right: Chat Window */}
         <div className={cn(
           "flex-1 min-w-0 transition-all",
           !selectedConversation ? "hidden md:flex" : "flex"
