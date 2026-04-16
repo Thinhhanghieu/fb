@@ -1,23 +1,16 @@
-/**
- * Notifications API Service
- */
 import axiosClient from '@/lib/axiosClient';
-import { Notification } from '@/types';
-import { API_ENDPOINTS } from '@/constants';
+import { Notification, PaginatedResponse } from '@/types';
 
 export const notificationsApi = {
-  getAll: async (): Promise<Notification[]> => {
-    const { data } = await axiosClient.get<Notification[]>(
-      API_ENDPOINTS.NOTIFICATIONS
-    );
-    return data;
-  },
-
-  markAsRead: async (id: string): Promise<void> => {
-    await axiosClient.patch(`/notifications/${id}/read`);
-  },
-
-  markAllAsRead: async (): Promise<void> => {
-    await axiosClient.patch('/notifications/read-all');
-  },
+  getNotifications: (page = 1, limit = 10) => 
+    axiosClient.get<PaginatedResponse<Notification>>('/v1/notifications', { params: { page, limit } }),
+  
+  getUnreadCount: () => 
+    axiosClient.get<number>('/v1/notifications/unread-count'),
+  
+  markAsRead: (id: string) => 
+    axiosClient.patch(`/v1/notifications/${id}/read`),
+  
+  markAllAsRead: () => 
+    axiosClient.patch('/v1/notifications/read-all'),
 };

@@ -1,6 +1,8 @@
 package com.fbclone.features.post;
 
 import com.fbclone.core.dto.PaginatedResponse;
+import com.fbclone.features.notification.NotificationService;
+import com.fbclone.features.notification.NotificationType;
 import com.fbclone.core.exception.NotFoundException;
 import com.fbclone.features.user.User;
 import com.fbclone.features.user.UserRepository;
@@ -25,6 +27,7 @@ public class PostServiceImpl implements PostService {
     private final UserRepository userRepository;
     private final LikeRepository likeRepository;
     private final CommentRepository commentRepository;
+    private final NotificationService notificationService;
 
     @Override
     public PostResponse createPost(CreatePostRequest request, String email) {
@@ -86,6 +89,9 @@ public class PostServiceImpl implements PostService {
                     .build();
             likeRepository.save(like);
             post.setLikesCount(post.getLikesCount() + 1);
+
+            // Trigger notification
+            notificationService.createNotification(post.getAuthor(), user, NotificationType.LIKE_POST, post.getId());
         }
 
         Post savedPost = postRepository.save(post);
@@ -112,6 +118,10 @@ public class PostServiceImpl implements PostService {
         post.setCommentsCount(post.getCommentsCount() + 1);
         
         Post savedPost = postRepository.save(post);
+
+        // Trigger notification
+        notificationService.createNotification(post.getAuthor(), user, NotificationType.COMMENT_POST, post.getId());
+
         boolean isLiked = likeRepository.existsByUserAndPost(user, post);
         return mapToResponseWithLikedInfo(savedPost, isLiked);
     }

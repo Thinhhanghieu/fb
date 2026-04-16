@@ -20,8 +20,14 @@ public class UserResponse {
     private LocalDateTime joinedAt;
     private int friendsCount;
     private boolean isOnline;
+    private String friendshipStatus; // NONE, PENDING, ACCEPTED
+    private String requestId;
 
     public static UserResponse fromEntity(User user) {
+        return fromEntity(user, "NONE", null);
+    }
+
+    public static UserResponse fromEntity(User user, String status, String requestId) {
         return UserResponse.builder()
                 .id(user.getId().toString())
                 .name(user.getFullName())
@@ -34,6 +40,8 @@ public class UserResponse {
                 .joinedAt(user.getCreatedAt())
                 .friendsCount(user.getFriendsCount())
                 .isOnline(user.isOnline())
+                .friendshipStatus(status)
+                .requestId(requestId)
                 .build();
     }
 }

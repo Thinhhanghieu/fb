@@ -8,6 +8,7 @@ import { tokenStorage } from '@/lib/axiosClient';
 import { setCurrentUser } from '@/store/slices/authSlice';
 import { authApi } from '@/services/api/auth.api';
 import { useAppDispatch } from '@/hooks/useAppDispatch';
+import { SocketProvider } from './SocketProvider';
 
 function AuthInitializer() {
   const dispatch = useAppDispatch();
@@ -34,8 +35,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
       <QueryClientProvider client={queryClient}>
-        <AuthInitializer />
-        {children}
+        <SocketProvider>
+          <AuthInitializer />
+          {children}
+        </SocketProvider>
       </QueryClientProvider>
     </Provider>
   );

@@ -10,11 +10,12 @@ import { SearchInput } from '@/components/shared/SearchInput';
 import { useAppSelector } from '@/hooks/useAppDispatch';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const navItems = [
   { href: ROUTES.FEED, icon: Home, label: 'Feed' },
   { href: ROUTES.PROFILE, icon: User, label: 'Trang cá nhân' },
-  { href: ROUTES.NOTIFICATIONS, icon: Bell, label: 'Thông báo' },
+  { href: ROUTES.NOTIFICATIONS, icon: Bell, label: 'Thông báo', badge: true },
   { href: ROUTES.MESSAGES, icon: MessageCircle, label: 'Tin nhắn' },
 ];
 
@@ -107,6 +108,8 @@ function UserAvatarDropdown() {
 export function Navbar() {
   const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { useGetUnreadCount } = useNotifications();
+  const { data: unreadCount } = useGetUnreadCount();
 
   return (
     <>
@@ -126,18 +129,25 @@ export function Navbar() {
 
         {/* Desktop Nav Links */}
         <nav className="flex items-center gap-1">
-          {navItems.map(({ href, icon: Icon, label }) => (
+          {navItems.map(({ href, icon: Icon, label, badge }) => (
             <Link
               key={href}
               href={href}
               className={cn(
-                'flex flex-col items-center gap-0.5 px-5 py-2 rounded-xl text-xs font-medium transition-all duration-200',
+                'flex flex-col items-center gap-0.5 px-5 py-2 rounded-xl text-xs font-medium transition-all duration-200 relative',
                 pathname === href
                   ? 'text-primary bg-primary/10'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground'
               )}
             >
-              <Icon size={20} />
+              <div className="relative">
+                <Icon size={20} />
+                {badge && unreadCount !== undefined && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold border-2 border-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
               <span className="hidden lg:block">{label}</span>
             </Link>
           ))}
@@ -152,7 +162,7 @@ export function Navbar() {
       {/* Mobile Bottom Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center justify-around px-2 py-2"
         style={{ background: 'rgba(247,249,252,0.85)', backdropFilter: 'blur(24px)', boxShadow: '0 -4px 30px rgba(0,0,0,0.03)' }}>
-        {navItems.map(({ href, icon: Icon, label }) => (
+        {navItems.map(({ href, icon: Icon, label, badge }) => (
           <Link
             key={href}
             href={href}
@@ -163,7 +173,14 @@ export function Navbar() {
                 : 'text-muted-foreground'
             )}
           >
-            <Icon size={22} />
+            <div className="relative">
+              <Icon size={22} />
+              {badge && unreadCount !== undefined && unreadCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold border-2 border-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
             <span className="text-[10px]">{label}</span>
           </Link>
         ))}

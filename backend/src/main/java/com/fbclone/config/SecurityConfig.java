@@ -36,8 +36,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/**").permitAll() // Allow auth APIs
-                        .requestMatchers("/api/v1/storage/**").permitAll() // TEMPORARY: Allow storage without login cache
-                        .requestMatchers("/storage/v1/object/**").permitAll() // Supabase Storage needs this
+                        .requestMatchers("/api/v1/storage/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll() // Allow WebSocket connections
                         .anyRequest().authenticated())
                 // Chạy JwtAuthFilter TRƯỚC filter xác thực mặc định của Spring
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

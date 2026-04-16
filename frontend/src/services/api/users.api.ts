@@ -7,12 +7,12 @@ import { API_ENDPOINTS } from '@/constants';
 
 export const usersApi = {
   getProfile: async (id: string): Promise<User> => {
-    const { data } = await axiosClient.get<User>(API_ENDPOINTS.USERS.PROFILE(id));
+    const { data } = await axiosClient.get<User>(`/v1/users/${id}`);
     return data;
   },
 
   getFriends: async (id: string): Promise<User[]> => {
-    const { data } = await axiosClient.get<User[]>(API_ENDPOINTS.USERS.FRIENDS(id));
+    const { data } = await axiosClient.get<User[]>(`/v1/users/${id}/friends`);
     return data;
   },
 

@@ -1,34 +1,67 @@
 'use client';
 
-import { MOCK_NOTIFICATIONS } from '@/constants/mockData';
+import { useEffect } from 'react';
+import { useNotifications } from '@/hooks/useNotifications';
 import { Avatar } from '@/components/shared/Avatar';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { formatDistanceToNow } from 'date-fns';
 import { vi } from 'date-fns/locale';
-import { Heart, MessageCircle, UserPlus, Share2, AtSign } from 'lucide-react';
+import { Heart, MessageCircle, UserPlus, UserCheck, Loader2 } from 'lucide-react';
+import { Notification } from '@/types';
+import { useRouter } from 'next/navigation';
 
-const iconMap = {
-  like: { Icon: Heart, color: '#e53e3e', bg: '#fed7d7' },
-  comment: { Icon: MessageCircle, color: '#3182ce', bg: '#bee3f8' },
-  friend_request: { Icon: UserPlus, color: '#38a169', bg: '#c6f6d5' },
-  share: { Icon: Share2, color: '#805ad5', bg: '#e9d8fd' },
-  mention: { Icon: AtSign, color: '#dd6b20', bg: '#feebc8' },
+const iconMap: Record<string, { Icon: any, color: string, bg: string }> = {
+  LIKE_POST: { Icon: Heart, color: '#e53e3e', bg: '#fed7d7' },
+  COMMENT_POST: { Icon: MessageCircle, color: '#3182ce', bg: '#bee3f8' },
+  FRIEND_REQUEST: { Icon: UserPlus, color: '#38a169', bg: '#c6f6d5' },
+  FRIEND_ACCEPT: { Icon: UserCheck, color: '#805ad5', bg: '#e9d8fd' },
 };
 
 export default function NotificationsPage() {
-  const unread = MOCK_NOTIFICATIONS.filter(n => !n.isRead);
-  const read = MOCK_NOTIFICATIONS.filter(n => n.isRead);
+  const router = useRouter();
+  const { useGetNotifications, markAsRead, markAllAsRead } = useNotifications();
+  const { data, isLoading } = useGetNotifications(1, 50);
 
-  function renderGroup(notifications: typeof MOCK_NOTIFICATIONS, title: string) {
-    if (notifications.length === 0) return null;
+  const notifications = data?.data || [];
+  const unread = notifications.filter(n => !n.isRead);
+  const read = notifications.filter(n => n.isRead);
+
+  useEffect(() => {
+    // Optionally mark all as read when visiting this page
+    // if (unread.length > 0) markAllAsRead();
+  }, [unread.length, markAllAsRead]);
+
+  const handleNotificationClick = (n: Notification) => {
+    if (!n.isRead) markAsRead(n.id);
+    
+    // Logic chuyển hướng dựa trên type
+    if (n.type === 'LIKE_POST' || n.type === 'COMMENT_POST') {
+      router.push(`/posts/${n.targetId}`);
+    } else if (n.type === 'FRIEND_REQUEST' || n.type === 'FRIEND_ACCEPT') {
+      router.push(`/profile/${n.actor.id}`);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="animate-spin text-primary" size={32} />
+      </div>
+    );
+  }
+
+  function renderGroup(groupItems: Notification[], title: string) {
+    if (groupItems.length === 0) return null;
     return (
       <section className="space-y-2">
         <h2 className="font-display text-base font-bold text-foreground px-1">{title}</h2>
-        {notifications.map((n) => {
-          const { Icon, color, bg } = iconMap[n.type];
+        {groupItems.map((n) => {
+          const config = iconMap[n.type] || iconMap.LIKE_POST;
+          const { Icon, color, bg } = config;
           return (
             <div
               key={n.id}
+              onClick={() => handleNotificationClick(n)}
               className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all duration-200 hover:scale-[1.01]"
               style={{ background: n.isRead ? 'var(--surface-container-lowest)' : 'rgba(0,88,188,0.06)' }}
             >
@@ -61,9 +94,28 @@ export default function NotificationsPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 space-y-6">
-      <PageHeader title="Thông báo" />
-      {renderGroup(unread, 'Mới')}
-      {renderGroup(read, 'Trước đây')}
+      <div className="flex items-center justify-between">
+        <PageHeader title="Thông báo" />
+        {unread.length > 0 && (
+          <button 
+            onClick={() => markAllAsRead()}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Đánh dấu tất cả đã đọc
+          </button>
+        )}
+      </div>
+      
+      {notifications.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground">
+          Bạn chưa có thông báo nào.
+        </div>
+      ) : (
+        <>
+          {renderGroup(unread, 'Mới')}
+          {renderGroup(read, 'Trước đây')}
+        </>
+      )}
     </div>
   );
 }

@@ -1,15 +1,28 @@
 'use client';
 
+import { useParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { usersApi } from '@/services/api/users.api';
+import { useFriends } from '@/hooks/useFriends';
 import { useAuth } from '@/hooks/useAuth';
 import { PostCard } from '@/components/shared/PostCard';
 import { Avatar } from '@/components/shared/Avatar';
 import { SectionCard } from '@/components/shared/SectionCard';
 import { AppButton } from '@/components/shared/AppButton';
-import { Camera, MapPin, Users, Edit3, Loader2 } from 'lucide-react';
+import { Camera, MapPin, Users, UserPlus, UserMinus, UserCheck, Loader2, X } from 'lucide-react';
 import { MOCK_POSTS, MOCK_FRIENDS } from '@/constants/mockData';
 
-export default function ProfilePage() {
-  const { user, isLoading } = useAuth();
+export default function UserProfilePage() {
+  const params = useParams();
+  const userId = params.id as string;
+  const { user: currentUser } = useAuth();
+  const { sendRequest, acceptRequest, declineRequest, removeFriend, isLoading: isFriendActionLoading } = useFriends();
+
+  const { data: user, isLoading, refetch } = useQuery({
+    queryKey: ['profile', userId],
+    queryFn: () => usersApi.getProfile(userId),
+    enabled: !!userId,
+  });
 
   if (isLoading) {
     return (
@@ -22,13 +35,85 @@ export default function ProfilePage() {
   if (!user) {
     return (
       <SectionCard className="p-8 text-center text-muted-foreground">
-        Vui lòng đăng nhập để xem trang cá nhân.
+        Người dùng không tồn tại.
       </SectionCard>
     );
   }
 
+  const isOwnProfile = currentUser?.id === user.id;
+
   // In a real app, you would fetch posts from backend using user.id
   const userPosts = MOCK_POSTS.filter(p => p.author.id === user.id);
+
+  const renderFriendshipButtons = () => {
+    if (isOwnProfile) return null;
+
+    switch (user.friendshipStatus) {
+      case 'ACCEPTED':
+        return (
+          <AppButton 
+            variant="secondary" 
+            size="sm" 
+            icon={<UserMinus size={15} />}
+            onClick={() => removeFriend(user.id)}
+            disabled={isFriendActionLoading}
+          >
+            Hủy kết bạn
+          </AppButton>
+        );
+      case 'PENDING':
+        if (user.requestId) {
+          // This means the current user received a request from this user
+          return (
+            <div className="flex gap-2">
+              <AppButton 
+                variant="primary" 
+                size="sm" 
+                icon={<UserCheck size={15} />}
+                onClick={() => acceptRequest(user.requestId!)}
+                disabled={isFriendActionLoading}
+              >
+                Chấp nhận
+              </AppButton>
+              <AppButton 
+                variant="secondary" 
+                size="sm" 
+                icon={<X size={15} />}
+                onClick={() => declineRequest(user.requestId!)}
+                disabled={isFriendActionLoading}
+              >
+                Từ chối
+              </AppButton>
+            </div>
+          );
+        } else {
+          // Current user sent a request
+          return (
+            <AppButton 
+              variant="secondary" 
+              size="sm" 
+              icon={<Loader2 className="animate-spin" size={15} />}
+              disabled
+            >
+              Đã gửi lời mời
+            </AppButton>
+          );
+        }
+      case 'NONE':
+      default:
+        return (
+          <AppButton 
+            variant="primary" 
+            size="sm" 
+            icon={<UserPlus size={15} />}
+            onClick={() => sendRequest(user.id)}
+            disabled={isFriendActionLoading}
+          >
+            Thêm bạn bè
+          </AppButton>
+        );
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -36,15 +121,6 @@ export default function ProfilePage() {
       <div className="relative">
         <div className="h-56 md:h-72 rounded-b-3xl overflow-hidden relative">
           <img src={user.coverPhoto || 'https://picsum.photos/1280/400?random=1'} alt="Cover" className="w-full h-full object-cover" />
-          <AppButton
-            variant="secondary"
-            size="sm"
-            icon={<Camera size={15} />}
-            className="absolute bottom-3 right-3 backdrop-blur-sm"
-            style={{ background: 'rgba(255,255,255,0.85)' }}
-          >
-            <span className="hidden sm:block">Chỉnh ảnh bìa</span>
-          </AppButton>
         </div>
 
         {/* Avatar and basic info */}
@@ -53,17 +129,10 @@ export default function ProfilePage() {
             <div className="relative">
               <Avatar src={user.avatar} alt={user.name} size="xl"
                 className="border-4 border-white shadow-md !w-24 !h-24 md:!w-32 md:!h-32" />
-              <button
-                className="absolute bottom-1 right-1 w-8 h-8 rounded-full flex items-center justify-center shadow-md"
-                style={{ background: 'var(--muted)', color: 'var(--foreground)' }}
-              >
-                <Camera size={14} />
-              </button>
             </div>
             <div className="flex gap-2 mb-2">
-              <AppButton variant="secondary" size="sm" icon={<Edit3 size={15} />}>
-                Chỉnh sửa
-              </AppButton>
+              {renderFriendshipButtons()}
+              <AppButton variant="secondary" size="sm">Nhắn tin</AppButton>
             </div>
           </div>
 

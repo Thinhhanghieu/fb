@@ -1,3 +1,13 @@
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export type FriendshipStatus = 'NONE' | 'PENDING' | 'ACCEPTED' | 'BLOCKED';
+
 export interface User {
   id: string;
   name: string;
@@ -10,21 +20,8 @@ export interface User {
   joinedAt: string;
   friendsCount: number;
   isOnline?: boolean;
-}
-
-// Override fields that come from backend with different names
-export interface BackendUser {
-  id: string;
-  name: string;
-  username: string;
-  email: string;
-  avatar?: string;
-  coverPhoto?: string;
-  bio?: string;
-  location?: string;
-  joinedAt: string;
-  friendsCount: number;
-  isOnline?: boolean;
+  friendshipStatus?: FriendshipStatus;
+  requestId?: string; // If there's a pending request, this is the ID
 }
 
 export interface Post {
@@ -49,9 +46,9 @@ export interface PostComment {
 
 export interface Notification {
   id: string;
-  type: 'like' | 'comment' | 'friend_request' | 'share' | 'mention';
+  type: 'LIKE_POST' | 'COMMENT_POST' | 'FRIEND_REQUEST' | 'FRIEND_ACCEPT';
   actor: User;
-  post?: Post;
+  targetId: string;
   message: string;
   isRead: boolean;
   createdAt: string;
