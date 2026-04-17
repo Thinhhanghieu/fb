@@ -15,6 +15,7 @@ interface ConversationListProps {
   currentUser: User;
   onSelect: (conversation: Conversation) => void;
   isLoading?: boolean;
+  typingUsers?: Record<string, boolean>;
 }
 
 export function ConversationList({ 
@@ -22,7 +23,8 @@ export function ConversationList({
   activeId, 
   currentUser, 
   onSelect,
-  isLoading 
+  isLoading,
+  typingUsers = {}
 }: ConversationListProps) {
   return (
     <div className="flex flex-col h-full w-full bg-background">
@@ -102,7 +104,9 @@ export function ConversationList({
                   </div>
                   
                   <div className="flex items-center justify-between gap-2">
-                    {lastMsg ? (
+                    {typingUsers[conv.id] ? (
+                      <p className="text-sm font-bold text-primary animate-pulse">Đang soạn tin nhắn...</p>
+                    ) : lastMsg ? (
                       <p className={cn(
                         'text-sm truncate flex-1',
                         isUnread ? 'font-bold text-foreground' : 'text-muted-foreground'
@@ -114,7 +118,7 @@ export function ConversationList({
                       <p className="text-sm italic text-muted-foreground">Bắt đầu trò chuyện</p>
                     )}
                     
-                    {isUnread && (
+                    {isUnread && !typingUsers[conv.id] && (
                       <div className="w-3 h-3 rounded-full bg-primary flex-shrink-0" />
                     )}
                   </div>

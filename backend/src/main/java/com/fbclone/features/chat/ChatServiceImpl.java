@@ -40,7 +40,7 @@ public class ChatServiceImpl implements ChatService {
 
     @Override
     @Transactional
-    public ChatMessageResponse saveMessage(UUID conversationId, String content, String senderEmail) {
+    public ChatMessageResponse saveMessage(UUID conversationId, String content, String senderEmail, MessageType type, String attachmentUrl) {
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new NotFoundException("Sender not found"));
 
@@ -51,6 +51,8 @@ public class ChatServiceImpl implements ChatService {
                 .conversation(conversation)
                 .sender(sender)
                 .content(content)
+                .type(type != null ? type : MessageType.TEXT)
+                .attachmentUrl(attachmentUrl)
                 .build();
 
         ChatMessage savedMessage = chatMessageRepository.save(message);

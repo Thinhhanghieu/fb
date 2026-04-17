@@ -17,14 +17,37 @@ export default function MessagesPage() {
   const conversationIdFromUrl = searchParams.get('c');
   
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, boolean>>({}); // convId -> isTyping
   const queryClient = useQueryClient();
-  const { publish } = useSocket();
+  const { subscribe, publish } = useSocket();
 
-  // 1. Fetch danh sách hội thoại
   const { data: conversations = [], isLoading: isLoadingConversations } = useQuery({
     queryKey: ['conversations'],
     queryFn: messagesApi.getConversations,
   });
+
+  // 1. WebSocket Subscriptions for Global Events (Typing, New Message)
+  useEffect(() => {
+    if (!currentUser || conversations.length === 0) return;
+
+    // Lắng nghe typing cho tất cả conversations mà user tham gia
+    const unsubs = conversations.map(conv => {
+      const topic = `/topic/typing/${conv.id}`;
+      console.log(`[MessagesPage] Subscribing to typing for ${conv.id}: ${topic}`);
+      
+      return subscribe(topic, (message) => {
+        console.log(`[MessagesPage] Typing event received for ${conv.id}`);
+        const data = JSON.parse(message.body);
+        if (data.email !== currentUser.email) {
+          setTypingUsers(prev => ({ ...prev, [conv.id]: data.isTyping }));
+        }
+      });
+    });
+
+    return () => {
+      unsubs.forEach(unsub => unsub());
+    };
+  }, [conversations, currentUser, subscribe]);
 
   // Tự động chọn cuộc hội thoại từ URL
   useEffect(() => {
@@ -45,23 +68,26 @@ export default function MessagesPage() {
     // gcTime: 1000 * 60 * 30, // Giữ trong bộ nhớ đệm 30 phút
   });
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = (content: string, type: string = 'TEXT', attachmentUrl?: string) => {
     if (!selectedConversation || !currentUser) return;
     
     publish('/app/chat.sendMessage', {
       conversationId: selectedConversation.id,
-      content: content
+      content,
+      type,
+      attachmentUrl
     });
 
     const tempId = Date.now().toString();
     const optimisticMessage: Message = {
       id: tempId,
-      conversationId: selectedConversation.id,
       sender: currentUser,
-      content: content,
+      content,
+      type: type as any,
+      attachmentUrl,
       createdAt: new Date().toISOString(),
       isRead: false
-    } as any;
+    };
 
     queryClient.setQueryData(['messages', selectedConversation.id], (old: Message[] = []) => [...old, optimisticMessage]);
   };
@@ -85,6 +111,7 @@ export default function MessagesPage() {
             currentUser={currentUser}
             onSelect={setSelectedConversation}
             isLoading={isLoadingConversations}
+            typingUsers={typingUsers}
           />
         </div>
 

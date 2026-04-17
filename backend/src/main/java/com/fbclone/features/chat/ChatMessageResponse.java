@@ -18,6 +18,8 @@ public class ChatMessageResponse {
     private UUID conversationId;
     private UserResponse sender;
     private String content;
+    private MessageType type;
+    private String attachmentUrl;
     private LocalDateTime createdAt;
     private boolean isRead;
 
@@ -27,6 +29,8 @@ public class ChatMessageResponse {
                 .conversationId(message.getConversation().getId())
                 .sender(UserResponse.fromEntity(message.getSender()))
                 .content(message.getContent())
+                .type(message.getType())
+                .attachmentUrl(message.getAttachmentUrl())
                 .createdAt(message.getCreatedAt())
                 .isRead(message.isRead())
                 .build();

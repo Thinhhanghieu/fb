@@ -58,6 +58,8 @@ export interface Message {
   id: string;
   sender: User;
   content: string;
+  type?: 'TEXT' | 'IMAGE';
+  attachmentUrl?: string;
   createdAt: string;
   isRead: boolean;
 }

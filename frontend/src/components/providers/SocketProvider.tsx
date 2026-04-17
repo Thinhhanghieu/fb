@@ -28,10 +28,23 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const currentUser = useAppSelector((state) => state.auth.currentUser);
   const [isConnected, setIsConnected] = useState(false);
   const stompClientRef = useRef<Client | null>(null);
+  const subscriptionQueueRef = useRef<{ destination: string; callback: (message: IMessage) => void; id: string }[]>([]);
+  const activeSubscriptionsRef = useRef<Record<string, any>>({});
   const queryClient = useQueryClient();
 
+  // Hàm thực hiện subscribe thực tế
+  const doSubscribe = (destination: string, callback: (message: IMessage) => void, id: string) => {
+    if (!stompClientRef.current || !stompClientRef.current.connected) return;
+    
+    console.log(`[WebSocket] Actually subscribing to ${destination}`);
+    const subscription = stompClientRef.current.subscribe(destination, (msg) => {
+      console.log(`[WebSocket] Message received from ${destination}`);
+      callback(msg);
+    });
+    activeSubscriptionsRef.current[id] = subscription;
+  };
+
   useEffect(() => {
-    // Chỉ kết nối khi đã có user đăng nhập
     if (!currentUser) {
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
@@ -43,64 +56,39 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     const socketUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '/ws') || 'http://localhost:8080/ws';
     const token = localStorage.getItem('fb_clone_token'); 
-    console.log('[WebSocket] Attempting connection with token:', token ? 'Exists' : 'Missing');
     
     const client = new Client({
       webSocketFactory: () => new SockJS(socketUrl),
       connectHeaders: {
         'Authorization': token ? `Bearer ${token}` : '',
-        'token': token || '', // Dự phòng thêm header 'token'
+        'token': token || '',
       },
       reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
       onConnect: (frame) => {
         setIsConnected(true);
         console.log('[WebSocket] Connected as:', currentUser.email);
-        console.log('[WebSocket] Session ID:', frame.headers['user-name'] || 'Assigned by server');
+        
+        // Thực hiện các subscription đang chờ trong hàng đợi
+        const queue = subscriptionQueueRef.current;
+        console.log(`[WebSocket] Processing queue of ${queue.length} subscriptions`);
+        queue.forEach(item => {
+          doSubscribe(item.destination, item.callback, item.id);
+        });
+        subscriptionQueueRef.current = [];
 
-        // Subscribe thông báo
+        // Các subscription mặc định
         client.subscribe('/user/topic/notifications', (message) => {
-          console.log('[WebSocket] Notification received');
           const newNotification: Notification = JSON.parse(message.body);
-          
-          queryClient.setQueryData([QUERY_KEYS.NOTIFICATIONS, 1, 50], (oldData: any) => {
-            if (!oldData) return oldData;
-            return {
-              ...oldData,
-              data: [newNotification, ...oldData.data],
-              total: (oldData.total || 0) + 1
-            };
-          });
-
-          queryClient.setQueryData(['notifications', 'unread-count'], (oldCount: number = 0) => oldCount + 1);
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
         });
 
-        // Subscribe tin nhắn chat
         client.subscribe('/user/queue/messages', (message) => {
-          console.log('[WebSocket] New chat message received:', message.body);
-          const newMessage: any = JSON.parse(message.body);
-          
-          // Cập nhật cache tin nhắn
-          // Đảm bảo conversationId được so sánh chính xác (String)
-          queryClient.setQueryData(['messages', newMessage.conversationId], (oldMessages: any[] = []) => {
-            console.log('[WebSocket] Updating cache for conversation:', newMessage.conversationId);
-            const exists = oldMessages.some(m => m.id === newMessage.id);
-            if (exists) return oldMessages;
-            return [...oldMessages, newMessage];
-          });
-
-          // Cập nhật danh sách hội thoại
           queryClient.invalidateQueries({ queryKey: ['conversations'] });
         });
       },
       onDisconnect: () => {
         setIsConnected(false);
-        console.log('[WebSocket] Disconnected');
-      },
-      onStompError: (frame) => {
-        console.error('[WebSocket] STOMP Error:', frame.headers['message']);
-        console.error('[WebSocket] Details:', frame.body);
+        activeSubscriptionsRef.current = {};
       }
     });
 
@@ -108,28 +96,44 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     stompClientRef.current = client;
 
     return () => {
-      console.log('[WebSocket] Deactivating connection...');
       client.deactivate();
       stompClientRef.current = null;
     };
   }, [currentUser, queryClient]);
 
-  const subscribe = (destination: string, callback: (message: IMessage) => void) => {
-    if (!stompClientRef.current || !isConnected) return () => {};
-    const subscription = stompClientRef.current.subscribe(destination, callback);
-    return () => subscription.unsubscribe();
-  };
+  const subscribe = React.useCallback((destination: string, callback: (message: IMessage) => void) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    
+    if (stompClientRef.current?.connected) {
+      doSubscribe(destination, callback, id);
+    } else {
+      console.log(`[WebSocket] Queueing subscription for ${destination}`);
+      subscriptionQueueRef.current.push({ destination, callback, id });
+    }
 
-  const publish = (destination: string, body: any) => {
-    if (!stompClientRef.current || !isConnected) {
-      console.warn('[WebSocket] Cannot publish: Not connected');
+    return () => {
+      if (activeSubscriptionsRef.current[id]) {
+        console.log(`[WebSocket] Unsubscribing from ${destination}`);
+        activeSubscriptionsRef.current[id].unsubscribe();
+        delete activeSubscriptionsRef.current[id];
+      } else {
+        // Xóa khỏi queue nếu chưa kịp subscribe
+        subscriptionQueueRef.current = subscriptionQueueRef.current.filter(item => item.id !== id);
+      }
+    };
+  }, []); // Không phụ thuộc isConnected để tránh re-render liên tục
+
+  const publish = React.useCallback((destination: string, body: any) => {
+    if (!stompClientRef.current?.connected) {
+      console.warn(`[WebSocket] Skip Publish - Not connected to ${destination}`);
       return;
     }
+    console.log(`[WebSocket] ---> Sending to ${destination}:`, body);
     stompClientRef.current.publish({
       destination,
       body: JSON.stringify(body),
     });
-  };
+  }, []);
 
   return (
     <SocketContext.Provider value={{ isConnected, subscribe, publish }}>

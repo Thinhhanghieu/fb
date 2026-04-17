@@ -8,6 +8,6 @@ import java.util.UUID;
 public interface ChatService {
     List<ConversationResponse> getConversations(String userEmail);
     List<ChatMessageResponse> getMessages(UUID conversationId);
-    ChatMessageResponse saveMessage(UUID conversationId, String content, String senderEmail);
+    ChatMessageResponse saveMessage(UUID conversationId, String content, String senderEmail, MessageType type, String attachmentUrl);
     Conversation getOrCreateConversation(User user1, User user2);
 }

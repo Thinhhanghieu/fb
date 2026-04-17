@@ -57,15 +57,25 @@ test.describe('Real-time Chat Flow', () => {
     await conversationItem.waitFor({ state: 'visible', timeout: 20000 });
     await conversationItem.click();
 
-    // 5. User A gửi tin nhắn
-    const testMessage = `Real-time Hello! ID: ${timestamp}`;
-    console.log('--- User A gửi tin: ' + testMessage);
+    // 5. User A gõ để test typing indicator
+    console.log('--- User A đang gõ... ---');
     const inputA = pageA.locator('input[placeholder="Aa"]');
     await inputA.waitFor({ state: 'visible' });
+    await inputA.fill('User A is typing something...');
+
+    // KIỂM TRA TYPING INDICATOR TẠI USER B
+    console.log('--- Chờ User B nhận typing indicator... ---');
+    const typingIndicator = pageB.locator('text=Đang soạn tin nhắn...');
+    await expect(typingIndicator).toBeVisible({ timeout: 15000 });
+    console.log('--- THÀNH CÔNG: User B đã thấy typing indicator! ---');
+
+    // 6. User A gửi tin nhắn
+    const testMessage = `Real-time Hello! ID: ${timestamp}`;
+    console.log('--- User A gửi tin: ' + testMessage);
     await inputA.fill(testMessage);
     await inputA.press('Enter');
 
-    // 6. KIỂM TRA REAL-TIME TẠI USER B
+    // 7. KIỂM TRA REAL-TIME TẠI USER B
     console.log('--- Chờ User B nhận tin nhắn... ---');
     const receivedMessage = pageB.locator(`text=${testMessage}`);
     

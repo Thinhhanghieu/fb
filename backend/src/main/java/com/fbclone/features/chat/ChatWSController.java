@@ -2,7 +2,9 @@ package com.fbclone.features.chat;
 
 import com.fbclone.features.user.User;
 import com.fbclone.features.user.UserRepository;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -34,52 +36,76 @@ public class ChatWSController {
         }
         
         String senderEmail = principal.getName();
-        log.info("Received WebSocket message from {}: {}", senderEmail, request.getContent());
+        log.info("Received WebSocket message from {}: type={}, content={}", 
+                senderEmail, request.getType(), request.getContent());
         
-        // 1. Lưu tin nhắn vào DB
+        // 1. Lưu tin nhắn vào DB với thông tin media
         ChatMessageResponse savedMessage = chatService.saveMessage(
                 request.getConversationId(), 
                 request.getContent(), 
-                senderEmail
+                senderEmail,
+                request.getType(),
+                request.getAttachmentUrl()
         );
 
         // 2. Gửi tin nhắn tới Topic chung của cuộc hội thoại
-        // Topic: /topic/messages.{conversationId}
-        log.info("Broadcasting message to topic: /topic/messages.{}", request.getConversationId());
+        String destination = "/topic/messages/" + request.getConversationId();
+        log.info("Broadcasting message to topic: {}", destination);
         messagingTemplate.convertAndSend(
-                "/topic/messages." + request.getConversationId(),
+                destination,
                 savedMessage
         );
     }
 
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload TypingRequest request, Principal principal) {
-        if (principal == null) return;
+        if (principal == null) {
+            log.error("[WS-Typing] Principal is null");
+            return;
+        }
         
-        // Gửi tín hiệu typing tới topic cuộc hội thoại
-        // Payload chỉ chứa userId và trạng thái isTyping để cực kỳ nhẹ
+        String senderEmail = principal.getName();
+        log.info("[WS-Typing] Received signal: From={}, Conv={}, isTyping={}", 
+                senderEmail, request.getConversationId(), request.isTyping());
+        
+        // Đổi sang dấu / để topic ổn định hơn
+        String destination = "/topic/typing/" + request.getConversationId();
+        log.info("[WS-Typing] Broadcasting to: {}", destination);
+        
         messagingTemplate.convertAndSend(
-                "/topic/typing." + request.getConversationId(),
-                new TypingResponse(principal.getName(), request.isTyping())
+                destination,
+                new TypingResponse(senderEmail, request.getConversationId(), request.isTyping())
         );
     }
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class ChatMessageRequest {
         private UUID conversationId;
         private String content;
+        private MessageType type;
+        private String attachmentUrl;
     }
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class TypingRequest {
         private UUID conversationId;
+        
+        @com.fasterxml.jackson.annotation.JsonProperty("isTyping")
         private boolean isTyping;
     }
 
     @Data
     @AllArgsConstructor
+    @NoArgsConstructor
     public static class TypingResponse {
         private String email;
+        private UUID conversationId;
+        
+        @com.fasterxml.jackson.annotation.JsonProperty("isTyping")
         private boolean isTyping;
     }
 }
