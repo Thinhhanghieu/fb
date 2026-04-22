@@ -1,0 +1,11 @@
+.env
+.env.local
+.git
+.gitignore
+target/
+Dockerfile
+docker-compose.yml
+mvnw
+mvnw.cmd
+.mvn/
+*.log

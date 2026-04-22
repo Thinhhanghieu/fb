@@ -119,16 +119,16 @@ export function ChatWindow({ conversation, messages, currentUser, onSendMessage,
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
-    
+
     // Khi bắt đầu gõ, gửi isTyping: true
     if (!typingTimeoutRef.current) {
       console.log('[ChatWindow] Starting typing...');
       publish('/app/chat.typing', { conversationId: conversation.id, isTyping: true });
     }
-    
+
     // Xóa timeout cũ và tạo mới để gửi isTyping: false sau 3s không gõ
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    
+
     typingTimeoutRef.current = setTimeout(() => {
       console.log('[ChatWindow] Stopped typing.');
       publish('/app/chat.typing', { conversationId: conversation.id, isTyping: false });
@@ -201,8 +201,11 @@ export function ChatWindow({ conversation, messages, currentUser, onSendMessage,
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
         <div className="flex flex-col items-center py-8 space-y-2 text-center">
-          <Avatar src={otherParticipant.avatar} size="lg" />
-          <h4 className="font-bold text-lg">{otherParticipant.name}</h4>
+          <Avatar
+            src={otherParticipant.avatar}
+            alt={otherParticipant.name}
+            size="lg"
+          />          <h4 className="font-bold text-lg">{otherParticipant.name}</h4>
           <p className="text-xs text-muted-foreground max-w-[200px]">Các bạn là bạn bè trên Facebook.</p>
         </div>
 
@@ -211,23 +214,23 @@ export function ChatWindow({ conversation, messages, currentUser, onSendMessage,
           const showAvatar = !isMe && (index === messages.length - 1 || messages[index + 1]?.sender.id !== msg.sender.id);
           const isImage = msg.type === 'IMAGE';
           const hasContent = msg.content && msg.content !== 'Đã gửi một ảnh';
-          
+
           return (
             <div key={msg.id} className={cn('flex flex-col', isMe ? 'items-end' : 'items-start')}>
               <div className={cn('flex items-end gap-2 max-w-[85%] md:max-w-[70%]', isMe ? 'flex-row-reverse' : 'flex-row')}>
                 {!isMe && (
                   <div className="w-7 h-7 flex-shrink-0">
-                    {showAvatar ? <Avatar src={msg.sender.avatar} size="xs" /> : null}
+                    {showAvatar ? <Avatar src={msg.sender.avatar} alt={msg.sender.name} size="sm" /> : null}
                   </div>
                 )}
-                
+
                 <div className="flex flex-col gap-1">
                   {isImage && (
                     <div className="rounded-2xl overflow-hidden border border-border shadow-sm bg-muted max-w-sm">
-                      <img 
-                        src={msg.attachmentUrl} 
-                        alt="Chat image" 
-                        className="w-full h-auto max-h-80 object-cover cursor-pointer hover:opacity-95 transition-opacity" 
+                      <img
+                        src={msg.attachmentUrl}
+                        alt="Chat image"
+                        className="w-full h-auto max-h-80 object-cover cursor-pointer hover:opacity-95 transition-opacity"
                         onClick={() => msg.attachmentUrl && openLightbox(msg.attachmentUrl)}
                       />
                     </div>
@@ -254,7 +257,7 @@ export function ChatWindow({ conversation, messages, currentUser, onSendMessage,
         {isOtherTyping && (
           <div className="flex items-end gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="w-8 h-8 flex-shrink-0 transition-transform hover:scale-110">
-              <Avatar src={otherParticipant.avatar} size="xs" />
+              <Avatar src={otherParticipant.avatar} alt={otherParticipant.name} size="sm" />
             </div>
             <div className="bg-muted px-4 py-2.5 rounded-2xl rounded-bl-sm flex gap-1 items-center shadow-sm">
               <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-duration:0.8s] [animation-delay:-0.3s]"></span>
@@ -273,7 +276,7 @@ export function ChatWindow({ conversation, messages, currentUser, onSendMessage,
           <div className="absolute left-4 -top-24 bg-background border border-border p-1 rounded-xl shadow-lg animate-in slide-in-from-bottom-4">
             <div className="relative group">
               <img src={previewUrl} alt="Preview" className="w-20 h-20 object-cover rounded-lg border border-border" />
-              <button 
+              <button
                 onClick={removeSelectedImage}
                 className="absolute -top-2 -right-2 bg-muted-foreground/80 text-white rounded-full p-0.5 hover:bg-destructive transition-colors shadow-sm"
               >
@@ -293,19 +296,19 @@ export function ChatWindow({ conversation, messages, currentUser, onSendMessage,
 
         <form onSubmit={handleSubmit} className="flex items-center gap-1 md:gap-2">
           <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={onFileSelect} />
-          
+
           <div className="hidden sm:flex items-center gap-0.5">
-            <AppButton 
-              type="button" 
-              variant="icon" 
-              size="sm" 
-              icon={<ImageIcon size={18} className="text-primary" />} 
+            <AppButton
+              type="button"
+              variant="icon"
+              size="sm"
+              icon={<ImageIcon size={18} className="text-primary" />}
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploading}
             />
             <AppButton type="button" variant="icon" size="sm" icon={<Smile size={18} className="text-primary" />} />
           </div>
-          
+
           <div className="flex-1 relative">
             <input
               type="text"
@@ -322,11 +325,11 @@ export function ChatWindow({ conversation, messages, currentUser, onSendMessage,
           </div>
 
           {(inputValue.trim() || selectedImage) ? (
-            <AppButton 
-              type="submit" 
-              variant="icon" 
-              size="sm" 
-              icon={<Send size={20} className="text-primary" />} 
+            <AppButton
+              type="submit"
+              variant="icon"
+              size="sm"
+              icon={<Send size={20} className="text-primary" />}
               disabled={isUploading}
             />
           ) : (

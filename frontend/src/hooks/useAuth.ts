@@ -20,6 +20,7 @@ export const useAuth = () => {
       dispatch(setCurrentUser(userData));
       return userData;
     },
+    enabled: !!tokenStorage.get(),
     retry: false,
     staleTime: 5 * 60 * 1000,
   });

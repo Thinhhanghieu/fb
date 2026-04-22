@@ -26,8 +26,10 @@ function UserAvatarDropdown() {
   const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
-    await logout();
+    setIsOpen(false);
+    // Điều hướng trước khi logout để các component khác unmount
     router.push(ROUTES.LOGIN);
+    await logout();
   };
 
   return (

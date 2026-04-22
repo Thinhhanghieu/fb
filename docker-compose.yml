@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fb-clone-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    networks:
+      - fb-clone-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fb-clone-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - backend
+    networks:
+      - fb-clone-network
+
+networks:
+  fb-clone-network:
+    driver: bridge

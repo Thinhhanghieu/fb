@@ -182,7 +182,7 @@ export function PostCard({ post, onLike }: PostCardProps) {
         <div className="p-4 pt-0 space-y-4" style={{ background: 'var(--surface-container-low)' }}>
           {/* Comment Input */}
           <form onSubmit={handleAddComment} className="flex items-center gap-2 pt-2 border-t border-border/50">
-            <Avatar size="sm" alt="My Avatar" />
+            <Avatar size="sm" alt="Bình luận" />
             <div className="flex-1 relative">
               <AppInput
                 placeholder="Viết bình luận..."

@@ -106,7 +106,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
 					queryClient.invalidateQueries({ queryKey: ["notifications"] });
 				});
 
-				client.za("/user/queue/messages", (message) => {
+				client.subscribe("/user/queue/messages", (message) => {
 					queryClient.invalidateQueries({ queryKey: ["conversations"] });
 				});
 			},
